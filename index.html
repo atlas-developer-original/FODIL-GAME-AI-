@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Redux - العملة الرقمية RDX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+        * { font-family: 'Cairo', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 32px;
+        }
+        .gold-text { color: #FFD700; }
+        .btn-gold {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #0A0A0A;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .btn-gold:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+        .balance-card {
+            background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(0,0,0,0.6));
+            border: 1px solid rgba(255,215,0,0.3);
+            border-radius: 48px;
+        }
+        .transaction-item {
+            background: rgba(0,0,0,0.4);
+            border-radius: 24px;
+            border-left: 4px solid #FFD700;
+        }
+        .admin-badge { background: #FF4500; color: white; border-radius: 20px; padding: 2px 12px; font-size: 12px; }
+        
+        /* شاشة الترحيب المتحركة */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0A0A0A, #1A1A2E);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        .coin-animation {
+            animation: floatCoin 1s ease-in-out infinite, spinCoin 2s linear infinite;
+        }
+        @keyframes floatCoin {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes spinCoin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        .splash-text {
+            animation: fadeInOut 2s ease-in-out infinite;
+        }
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- شاشة الترحيب المتحركة -->
+<div id="splashScreen" class="splash-screen">
+    <div class="text-center">
+        <div class="coin-animation text-8xl mb-4">
+            <i class="fas fa-coins gold-text"></i>
+        </div>
+        <h1 class="text-4xl font-bold gold-text splash-text">Redux</h1>
+        <p class="text-gray-400 mt-2">عملة RDX الرقمية</p>
+    </div>
+</div>
+
+<!-- المحتوى الرئيسي -->
+<div id="app" class="max-w-md mx-auto px-4 py-6 pb-24 relative min-h-screen" style="display: none;">
+    
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold gold-text">Redux</h1>
+            <p class="text-gray-400 text-xs">عملة RDX الرقمية</p>
+        </div>
+        <div id="roleBadge" class="bg-yellow-900/50 px-3 py-1 rounded-full text-xs">
+            <i class="fas fa-user"></i> <span id="userRoleLabel">عضو</span>
+        </div>
+    </div>
+
+    <div id="authSection" class="glass-card p-6 mb-6">
+        <div id="loginView">
+            <h2 class="text-xl font-bold mb-4 text-center gold-text">تسجيل الدخول</h2>
+            <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 mb-3 text-white">
+            <input type="password" id="loginPassword" placeholder="كلمة المرور" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 mb-4 text-white">
+            <button onclick="handleLogin()" class="btn-gold w-full py-3 rounded-xl">دخول</button>
+            <p class="text-center text-gray-400 mt-4 text-sm">ليس لديك حساب؟ <button onclick="showRegister()" class="gold-text">إنشاء حساب</button></p>
+        </div>
+        <div id="registerView" style="display: none;">
+            <h2 class="text-xl font-bold mb-4 text-center gold-text">إنشاء حساب</h2>
+            <input type="email" id="regEmail" placeholder="البريد الإلكتروني" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 mb-3 text-white">
+            <input type="password" id="regPassword" placeholder="كلمة المرور" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 mb-3 text-white">
+            <input type="date" id="regBirthday" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 mb-3 text-white">
+            <input type="url" id="regAvatar" placeholder="رابط الصورة الشخصية (اختياري)" class="w-full bg-black/50 border border-gray-700 rounded-xl p-3 mb-4 text-white">
+            <button onclick="handleRegister()" class="btn-gold w-full py-3 rounded-xl">إنشاء حساب</button>
+            <p class="text-center text-gray-400 mt-4 text-sm"><button onclick="showLogin()" class="gold-text">عودة لتسجيل الدخول</button></p>
+        </div>
+    </div>
+
+    <div id="userPanel" style="display: none;">
+        <div class="balance-card p-6 text-center mb-6">
+            <p class="text-gray-300 text-sm">رصيدك الحالي</p>
+            <p class="text-5xl font-bold gold-text mt-2"><span id="userBalance">0</span> <span class="text-xl">RDX</span></p>
+            <p class="text-gray-400 text-xs mt-2">رقم الأيدي: <span id="userIdNumber" class="gold-text font-mono">----</span></p>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <button onclick="showSendModal()" class="glass-card py-4 flex flex-col items-center gap-2 hover:border-yellow-500 transition"><i class="fas fa-paper-plane text-2xl gold-text"></i><span>إرسال RDX</span></button>
+            <button onclick="showHistory()" class="glass-card py-4 flex flex-col items-center gap-2 hover:border-yellow-500 transition"><i class="fas fa-clock text-2xl gold-text"></i><span>سجل العمليات</span></button>
+            <button onclick="showDepositInfo()" class="glass-card py-4 flex flex-col items-center gap-2 hover:border-yellow-500 transition"><i class="fas fa-plus-circle text-2xl gold-text"></i><span>شحن الرصيد</span></button>
+            <button onclick="showProfile()" class="glass-card py-4 flex flex-col items-center gap-2 hover:border-yellow-500 transition"><i class="fas fa-user-circle text-2xl gold-text"></i><span>ملفي الشخصي</span></button>
+        </div>
+        <div id="historyList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+    </div>
+
+    <div id="adminPanel" style="display: none;">
+        <div class="glass-card p-4 mb-6">
+            <div class="flex justify-between items-center"><div><i class="fas fa-chart-line gold-text"></i> <span class="font-bold">لوحة التحكم</span></div><span class="admin-badge">مطور</span></div>
+            <div class="grid grid-cols-2 gap-4 mt-4"><div class="text-center"><p class="text-2xl font-bold gold-text" id="adminTotalUsers">0</p><p class="text-xs">الأعضاء</p></div><div class="text-center"><p class="text-2xl font-bold gold-text" id="adminTotalSupply">0</p><p class="text-xs">إجمالي RDX</p></div></div>
+            <button onclick="loadAdminUsers()" class="w-full mt-4 bg-yellow-800/50 py-2 rounded-xl text-sm">عرض جميع المستخدمين</button>
+        </div>
+        <div id="adminUsersList" class="space-y-2"></div>
+        <div class="glass-card p-4 mt-4"><h3 class="font-bold mb-2">إرسال رصيد لأي مستخدم</h3><input type="text" id="adminTargetUserId" placeholder="رقم الأيدي للمستلم" class="w-full bg-black/50 p-2 rounded-lg mb-2"><input type="number" id="adminAmount" placeholder="المبلغ" class="w-full bg-black/50 p-2 rounded-lg mb-2"><button onclick="adminSendRDX()" class="btn-gold w-full py-2 rounded-xl">تأكيد الإرسال</button></div>
+    </div>
+
+    <div id="sendModal" class="fixed inset-0 bg-black/80 backdrop-blur z-50 flex items-center justify-center px-4" style="display: none;">
+        <div class="glass-card p-6 w-full max-w-sm"><h3 class="text-xl font-bold mb-4">إرسال RDX</h3><input type="text" id="sendToUserId" placeholder="رقم الأيدي للمستلم" class="w-full bg-black/50 p-3 rounded-xl mb-3"><input type="number" id="sendAmount" placeholder="المبلغ" class="w-full bg-black/50 p-3 rounded-xl mb-4"><div class="flex gap-3"><button onclick="sendRDX()" class="btn-gold flex-1 py-2">إرسال</button><button onclick="closeModal()" class="bg-gray-700 flex-1 py-2 rounded-xl">إلغاء</button></div></div>
+    </div>
+
+    <div id="depositModal" class="fixed inset-0 bg-black/80 backdrop-blur z-50 flex items-center justify-center px-4" style="display: none;">
+        <div class="glass-card p-6 w-full max-w-sm text-center"><i class="fab fa-instagram text-4xl gold-text mb-3"></i><p class="mb-4">للشحن، راسلنا على إنستقرام:<br/><span class="gold-text font-bold">@redux_support</span></p><button onclick="closeModal()" class="btn-gold w-full py-2">فهمت</button></div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://gczyofuvpcmrrewddbib.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_6766sx2ywzDNoVFYDDS1YQ_c6YuosPG';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentUser = null, currentUserData = null;
+
+    // إخفاء شاشة الترحيب بعد 2 ثانية
+    setTimeout(() => {
+        document.getElementById('splashScreen').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('splashScreen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            checkSession();
+        }, 500);
+    }, 2000);
+
+    async function checkSession() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) { currentUser = session.user; await loadUserData(); showApp(); }
+        else showAuth();
+    }
+
+    async function loadUserData() {
+        if(!currentUser) return;
+        let { data } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+        if(!data) {
+            const newId = Math.floor(Math.random() * 10**12).toString().padStart(12,'0');
+            await supabase.from('users').insert({ id: currentUser.id, email: currentUser.email, user_id: newId, is_admin: (currentUser.email === 'fodilzr32@gmail.com') });
+            await supabase.from('wallets').insert({ user_id: currentUser.id, balance: 0 });
+            let { data: d2 } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+            currentUserData = d2;
+        } else currentUserData = data;
+        let { data: wallet } = await supabase.from('wallets').select('balance').eq('user_id', currentUser.id).single();
+        if(wallet) document.getElementById('userBalance').innerText = wallet.balance;
+        if(currentUserData) document.getElementById('userIdNumber').innerText = currentUserData.user_id;
+        if(currentUserData?.is_admin) {
+            document.getElementById('roleBadge').innerHTML = '<i class="fas fa-crown"></i> مطور';
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('userPanel').style.display = 'none';
+            loadAdminStats();
+        } else {
+            document.getElementById('userPanel').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            loadUserHistory();
+        }
+    }
+
+    async function loadUserHistory() {
+        let { data } = await supabase.from('transactions').select('*, from:from_user_id(email), to:to_user_id(email)').or(`from_user_id.eq.${currentUser.id},to_user_id.eq.${currentUser.id}`).order('created_at', {ascending: false});
+        let html = '';
+        if(data?.length) data.forEach(t => { let isSent = t.from_user_id === currentUser.id; html += `<div class="transaction-item p-3 flex justify-between"><div><i class="fas ${isSent ? 'fa-arrow-up text-red-400' : 'fa-arrow-down text-green-400'}"></i> <span>${isSent ? 'إلى' : 'من'} ${t.to?.email || t.from?.email || 'مستخدم'}</span></div><div class="font-bold ${isSent ? 'text-red-400' : 'text-green-400'}">${isSent ? '-' : '+'}${t.amount} RDX</div></div>`; });
+        else html = '<div class="text-center text-gray-500">لا توجد عمليات</div>';
+        document.getElementById('historyList').innerHTML = html;
+    }
+
+    async function loadAdminStats() {
+        let { count: usersCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
+        let { data: wallets } = await supabase.from('wallets').select('balance');
+        let totalSupply = wallets?.reduce((a,b)=> a + (b.balance||0), 0) || 0;
+        document.getElementById('adminTotalUsers').innerText = usersCount || 0;
+        document.getElementById('adminTotalSupply').innerText = totalSupply;
+    }
+    async function loadAdminUsers() {
+        let { data: users } = await supabase.from('users').select('id, email, user_id');
+        let html = '';
+        for(let u of users) {
+            let { data: w } = await supabase.from('wallets').select('balance').eq('user_id', u.id).single();
+            html += `<div class="glass-card p-3 flex justify-between"><div><div>${u.email}</div><div class="text-xs text-gray-400">ID: ${u.user_id}</div></div><div>${w?.balance || 0} RDX</div></div>`;
+        }
+        document.getElementById('adminUsersList').innerHTML = html;
+    }
+    async function adminSendRDX() {
+        let targetUserId = document.getElementById('adminTargetUserId').value;
+        let amount = parseInt(document.getElementById('adminAmount').value);
+        if(!targetUserId || !amount) return alert('أدخل البيانات');
+        let { data: targetUser } = await supabase.from('users').select('id').eq('user_id', targetUserId).single();
+        if(!targetUser) return alert('المستخدم غير موجود');
+        let { data: targetWallet } = await supabase.from('wallets').select('balance').eq('user_id', targetUser.id).single();
+        await supabase.from('wallets').update({ balance: targetWallet.balance + amount }).eq('user_id', targetUser.id);
+        await supabase.from('transactions').insert({ from_user_id: null, to_user_id: targetUser.id, amount: amount, type: 'deposit' });
+        alert('تم الشحن');
+        loadAdminStats();
+    }
+    async function sendRDX() {
+        let toUserId = document.getElementById('sendToUserId').value;
+        let amount = parseInt(document.getElementById('sendAmount').value);
+        if(!toUserId || !amount) return alert('أدخل البيانات');
+        let { data: target } = await supabase.from('users').select('id').eq('user_id', toUserId).single();
+        if(!target) return alert('رقم الأيدي خطأ');
+        let { data: myWallet } = await supabase.from('wallets').select('balance').eq('user_id', currentUser.id).single();
+        if(myWallet.balance < amount) return alert('الرصيد غير كاف');
+        await supabase.from('wallets').update({ balance: myWallet.balance - amount }).eq('user_id', currentUser.id);
+        let { data: targetWallet } = await supabase.from('wallets').select('balance').eq('user_id', target.id).single();
+        await supabase.from('wallets').update({ balance: targetWallet.balance + amount }).eq('user_id', target.id);
+        await supabase.from('transactions').insert({ from_user_id: currentUser.id, to_user_id: target.id, amount: amount, type: 'send' });
+        alert('تم الإرسال');
+        closeModal();
+        loadUserData();
+        loadUserHistory();
+    }
+    async function handleLogin() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        let { error } = await supabase.auth.signInWithPassword({ email, password });
+        if(error) alert('خطأ: '+error.message);
+        else location.reload();
+    }
+    async function handleRegister() {
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const birthday = document.getElementById('regBirthday').value;
+        const avatar = document.getElementById('regAvatar').value;
+        let { error } = await supabase.auth.signUp({ email, password, options: { data: { birthday, avatar } } });
+        if(error) alert(error.message);
+        else alert('تم إنشاء الحساب، يمكنك تسجيل الدخول');
+        showLogin();
+    }
+    function showRegister() { document.getElementById('loginView').style.display='none'; document.getElementById('registerView').style.display='block'; }
+    function showLogin() { document.getElementById('loginView').style.display='block'; document.getElementById('registerView').style.display='none'; }
+    function showAuth() { document.getElementById('authSection').style.display='block'; document.getElementById('userPanel').style.display='none'; document.getElementById('adminPanel').style.display='none'; }
+    function showApp() { document.getElementById('authSection').style.display='none'; loadUserData(); }
+    function showSendModal() { document.getElementById('sendModal').style.display='flex'; }
+    function showDepositInfo() { document.getElementById('depositModal').style.display='flex'; }
+    function closeModal() { document.getElementById('sendModal').style.display='none'; document.getElementById('depositModal').style.display='none'; }
+    function showHistory() { loadUserHistory(); }
+    function showProfile() { alert(`📧 ${currentUser.email}\n🎂 ${currentUserData?.birthday || 'غير مدخل'}`); }
+    window.sendRDX = sendRDX; window.adminSendRDX = adminSendRDX;
+</script>
+</body>
+</html>
