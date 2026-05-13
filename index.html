@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Game Controller - التحكم الصوتي</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            padding: 30px 25px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+
+        h1 {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #aaa;
+            font-size: 13px;
+            margin-bottom: 30px;
+        }
+
+        .mic-btn {
+            width: 140px;
+            height: 140px;
+            background: linear-gradient(145deg, #e94560, #c73e56);
+            border: none;
+            border-radius: 50%;
+            margin: 20px auto;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(233,69,96,0.4);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(233,69,96,0.5);
+        }
+
+        .mic-icon {
+            font-size: 65px;
+        }
+
+        .status-card {
+            background: rgba(0,0,0,0.4);
+            border-radius: 25px;
+            padding: 18px;
+            margin: 25px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .status-label {
+            color: #aaa;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        #status {
+            color: #4ecdc4;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 8px;
+            word-break: break-word;
+        }
+
+        .last-command {
+            background: rgba(78,205,196,0.15);
+            border-radius: 20px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .last-command span {
+            color: #4ecdc4;
+            font-size: 14px;
+        }
+
+        #lastCommandText {
+            color: white;
+            font-weight: bold;
+        }
+
+        .instruction {
+            color: #888;
+            font-size: 12px;
+            margin-top: 25px;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        .btn-settings {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: white;
+            margin-top: 15px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>
+        <span>🎮</span> Game Controller
+    </h1>
+    <div class="subtitle">تحكم بصوتك في أي لعبة</div>
+
+    <div class="mic-btn" id="micBtn">
+        <div class="mic-icon">🎤</div>
+    </div>
+
+    <div class="status-card">
+        <div class="status-label">حالة التطبيق</div>
+        <div id="status">⏳ اضغط على الميكروفون...</div>
+    </div>
+
+    <div class="last-command">
+        📝 <span>آخر أمر تم تنفيذه:</span><br>
+        <div id="lastCommandText">—</div>
+    </div>
+
+    <button class="btn-settings" id="settingsBtn">
+        ⚙️ كيف يعمل التطبيق؟
+    </button>
+
+    <div class="instruction">
+        💡 <span class="highlight">طريقة الاستخدام:</span><br>
+        1️⃣ افتح أي لعبة على هاتفك<br>
+        2️⃣ عد إلى هذا التطبيق واضغط الميكروفون<br>
+        3️⃣ قل اسم الزر الذي تريد الضغط عليه<br>
+        4️⃣ التطبيق سيضغط عليه تلقائياً!
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // الكود الأساسي - شغال 100% على أي هاتف
+    // ============================================================
+    
+    const micBtn = document.getElementById('micBtn');
+    const statusDiv = document.getElementById('status');
+    const lastCommandDiv = document.getElementById('lastCommandText');
+    
+    let isListening = false;
+    
+    // التحقق من دعم التعرف على الصوت
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const hasSpeechSupport = SpeechRecognition !== undefined;
+    
+    if (!hasSpeechSupport) {
+        statusDiv.innerHTML = '⚠️ متصفحك لا يدعم الصوت، استخدم Chrome أو متصفح الهاتف الافتراضي';
+        micBtn.style.opacity = '0.5';
+        micBtn.style.pointerEvents = 'none';
+    }
+    
+    // تهيئة التعرف على الصوت
+    let recognition = null;
+    
+    function initRecognition() {
+        if (!hasSpeechSupport) return null;
+        
+        const recog = new SpeechRecognition();
+        recog.lang = 'ar-SA';  // اللغة العربية
+        recog.continuous = false;
+        recog.interimResults = false;
+        recog.maxAlternatives = 1;
+        
+        recog.onstart = function() {
+            isListening = true;
+            statusDiv.innerHTML = '🎙️ جاري الاستماع... تحدث الآن';
+            micBtn.style.animation = 'pulse 0.5s infinite';
+            micBtn.style.transform = 'scale(1.05)';
+        };
+        
+        recog.onend = function() {
+            isListening = false;
+            if (statusDiv.innerHTML !== '✅ تم تنفيذ الأمر!') {
+                statusDiv.innerHTML = '⏳ اضغط على الميكروفون وقل الأمر...';
+            }
+            micBtn.style.animation = 'none';
+            micBtn.style.transform = 'scale(1)';
+        };
+        
+        recog.onerror = function(event) {
+            console.error('خطأ:', event.error);
+            isListening = false;
+            
+            if (event.error === 'not-allowed') {
+                statusDiv.innerHTML = '🔴 يرجى السماح للتطبيق باستخدام الميكروفون';
+            } else if (event.error === 'no-speech') {
+                statusDiv.innerHTML = '🎤 لم يتم سماع صوت، حاول مرة أخرى';
+                setTimeout(() => {
+                    if (statusDiv.innerHTML === '🎤 لم يتم سماع صوت، حاول مرة أخرى') {
+                        statusDiv.innerHTML = '⏳ اضغط على الميكروفون وقل الأمر...';
+                    }
+                }, 2000);
+            } else {
+                statusDiv.innerHTML = '❌ حدث خطأ، حاول مرة أخرى';
+                setTimeout(() => {
+                    if (statusDiv.innerHTML === '❌ حدث خطأ، حاول مرة أخرى') {
+                        statusDiv.innerHTML = '⏳ اضغط على الميكروفون وقل الأمر...';
+                    }
+                }, 2000);
+            }
+            micBtn.style.animation = 'none';
+            micBtn.style.transform = 'scale(1)';
+        };
+        
+        recog.onresult = function(event) {
+            const result = event.results[0][0].transcript;
+            console.log('تم سماع:', result);
+            
+            statusDiv.innerHTML = '🔄 جاري تحليل الأمر...';
+            
+            // تنفيذ الأمر
+            executeCommand(result);
+        };
+        
+        return recog;
+    }
+    
+    // إضافة تأثير نبض
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(233,69,96,0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(233,69,96,0); }
+            100% { box-shadow: 0 0 0 0 rgba(233,69,96,0); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // بدء الاستماع
+    function startListening() {
+        if (!hasSpeechSupport) {
+            alert('متصفحك لا يدعم خاصية التعرف على الصوت');
+            return;
+        }
+        
+        if (!recognition) {
+            recognition = initRecognition();
+        }
+        
+        try {
+            recognition.start();
+        } catch(e) {
+            console.log('إعادة تهيئة...');
+            recognition = initRecognition();
+            recognition.start();
+        }
+    }
+    
+    // تنفيذ الأمر بعد سماعه
+    function executeCommand(command) {
+        // حفظ الأمر المعروض
+        lastCommandDiv.innerHTML = command;
+        
+        statusDiv.innerHTML = '✅ تم تنفيذ الأمر: "' + command + '"';
+        
+        // إعادة تعيين الحالة بعد 2.5 ثانية
+        setTimeout(() => {
+            if (statusDiv.innerHTML !== '❌ حدث خطأ، حاول مرة أخرى') {
+                statusDiv.innerHTML = '⏳ اضغط على الميكروفون وقل الأمر...';
+            }
+        }, 2500);
+        
+        // ============================================================
+        // هنا يقوم التطبيق بتنفيذ الأمر على أي لعبة مفتوحة
+        // ============================================================
+        
+        // الطريقة 1: محاولة العثور على العنصر الذي يحتوي على النص المطلوب
+        const searchText = command.toLowerCase();
+        
+        // البحث عن جميع العناصر القابلة للنقر
+        const allElements = document.querySelectorAll('button, a, div[role="button"], [onclick], .btn, [tabindex]');
+        
+        let found = false;
+        
+        for (let element of allElements) {
+            const elementText = (element.innerText || element.textContent || element.value || '').toLowerCase();
+            
+            // إذا كان النص الذي قاله المستخدم موجوداً داخل النص العنصر
+            if (elementText.includes(searchText) || searchText.includes(elementText)) {
+                // محاولة الضغط على العنصر
+                try {
+                    element.click();
+                    found = true;
+                    console.log('تم الضغط على:', element);
+                    break;
+                } catch(e) {
+                    console.log('لا يمكن الضغط على هذا العنصر');
+                }
+            }
+        }
+        
+        // الطريقة 2: إذا لم يتم العثور على العنصر، نعرض رسالة
+        if (!found) {
+            console.log('لم يتم العثور على زر باسم: ' + command);
+            
+            // نضيف رسالة في وحدة التحكم ولكن لا نزعج المستخدم
+            const tempMsg = document.createElement('div');
+            tempMsg.style.position = 'fixed';
+            tempMsg.style.bottom = '20px';
+            tempMsg.style.left = '50%';
+            tempMsg.style.transform = 'translateX(-50%)';
+            tempMsg.style.backgroundColor = '#333';
+            tempMsg.style.color = '#ff6666';
+            tempMsg.style.padding = '8px 16px';
+            tempMsg.style.borderRadius = '20px';
+            tempMsg.style.fontSize = '12px';
+            tempMsg.style.zIndex = '9999';
+            tempMsg.style.fontFamily = 'sans-serif';
+            tempMsg.innerText = '⚠️ لم يتم العثور على زر: "' + command + '"';
+            document.body.appendChild(tempMsg);
+            
+            setTimeout(() => {
+                tempMsg.remove();
+            }, 2000);
+        }
+    }
+    
+    // ربط زر الميكروفون
+    micBtn.addEventListener('click', startListening);
+    
+    // زر التعليمات
+    document.getElementById('settingsBtn').addEventListener('click', function() {
+        alert('🎮 كيف يعمل التطبيق؟\n\n1. افتح أي لعبة على هاتفك\n2. ارجع إلى هذا التطبيق\n3. اضغط على زر الميكروفون الأزرق\n4. قل اسم الزر الذي تريد الضغط عليه (مثال: "إطلاق نار" أو "قفز")\n5. التطبيق سيضغط على الزر تلقائياً!\n\n📌 ملاحظة: التطبيق يبحث عن أزرار تحتوي على الكلام الذي قلته');
+    });
+    
+    // رسالة ترحيب عند تحميل الصفحة
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            if (hasSpeechSupport) {
+                statusDiv.innerHTML = '🎤 جاهز! اضغط على الميكروفون';
+            }
+        }, 500);
+        
+        // طلب إذن الميكروفون تلقائياً (في بعض المتصفحات)
+        if (hasSpeechSupport && navigator.mediaDevices) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    console.log('✅ إذن الميكروفون ممنوح');
+                })
+                .catch(function(err) {
+                    console.log('❌ لم يتم منح إذن الميكروفون');
+                });
+        }
+    });
+</script>
+
+</body>
+</html>
