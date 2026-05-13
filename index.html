@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>FODIL AI - ذكاء اصطناعي جزائري</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            font-family: 'Segoe UI', 'Tajawal', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* الهيدر */
+        .header {
+            background: #0f0f0f;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #e94560, #c73e56);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .header-info h1 {
+            color: white;
+            font-size: 18px;
+        }
+
+        .header-info p {
+            color: #4ecdc4;
+            font-size: 11px;
+        }
+
+        .icon-btn {
+            background: #1e1e1e;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .icon-btn:active {
+            background: #333;
+            transform: scale(0.95);
+        }
+
+        /* منطقة المحادثة */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: #1e1e1e;
+        }
+
+        .user-message .message-avatar {
+            background: #e94560;
+        }
+
+        .message-bubble {
+            background: #1e1e1e;
+            padding: 12px 16px;
+            border-radius: 20px;
+            color: #e0e0e0;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .user-message .message-bubble {
+            background: linear-gradient(135deg, #e94560, #c73e56);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message .message-bubble {
+            border-bottom-left-radius: 5px;
+        }
+
+        /* مؤشر الكتابة */
+        .typing-indicator {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .typing-dots {
+            background: #1e1e1e;
+            padding: 12px 18px;
+            border-radius: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #888;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-5px); }
+        }
+
+        /* منطقة الإدخال */
+        .input-area {
+            background: #0f0f0f;
+            padding: 12px 16px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #1e1e1e;
+            border-radius: 30px;
+            padding: 5px 15px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 15px;
+            padding: 12px 0;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .chat-input::placeholder {
+            color: #555;
+        }
+
+        .send-btn {
+            background: #e94560;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #e94560;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <div class="avatar">🤖</div>
+        <div class="header-info">
+            <h1>FODIL AI</h1>
+            <p>● ذكاء اصطناعي متقدم</p>
+        </div>
+    </div>
+    <div class="header-right">
+        <button class="icon-btn" id="clearBtn" onclick="clearChat()">🗑️</button>
+        <button class="icon-btn" id="infoBtn" onclick="showInfo()">ℹ️</button>
+    </div>
+</div>
+
+<div class="chat-area" id="chatArea">
+    <div class="message bot-message">
+        <div class="message-avatar">🤖</div>
+        <div class="message-bubble">
+            السلام عليكم! 👋<br><br>
+            أنا <strong>FODIL AI</strong><br>
+            مطوري: <strong>Z.FODIL زروالي فضيل</strong><br>
+            من <strong>الجزائر - تيارت - سوڨر</strong><br>
+            📅 مولود: 16/07/2008<br><br>
+            اسألني أي شيء! 😊
+        </div>
+    </div>
+</div>
+
+<div class="input-area">
+    <div class="input-container">
+        <input type="text" class="chat-input" id="chatInput" placeholder="اكتب رسالتك هنا..." autocomplete="off">
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">📤</button>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // FODIL AI - يعمل 100% مع OpenRouter
+    // المطور: Z.FODIL زروالي فضيل - الجزائر - تيارت - سوڨر
+    // ============================================================
+    
+    // 🔑 مفتاح OpenRouter الخاص بك
+    const OPENROUTER_API_KEY = "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";
+    
+    let isWaiting = false;
+    let conversationHistory = [];
+    
+    // إضافة رسالة
+    function addMessage(text, isUser = false) {
+        const chatArea = document.getElementById('chatArea');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = isUser ? '👤' : '🤖';
+        
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.innerHTML = text.replace(/\n/g, '<br>');
+        
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(bubble);
+        chatArea.appendChild(messageDiv);
+        
+        // تمرير للأسفل
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+    
+    // إظهار مؤشر الكتابة
+    function showTyping() {
+        const chatArea = document.getElementById('chatArea');
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot-message typing-indicator';
+        typingDiv.id = 'typingIndicator';
+        typingDiv.innerHTML = `
+            <div class="message-avatar">🤖</div>
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        `;
+        chatArea.appendChild(typingDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+    
+    function hideTyping() {
+        const indicator = document.getElementById('typingIndicator');
+        if (indicator) indicator.remove();
+    }
+    
+    // الاتصال بـ OpenRouter API (مجاني)
+    async function callOpenRouter(userMessage) {
+        const url = "https://openrouter.ai/api/v1/chat/completions";
+        
+        // إضافة رسالة المستخدم إلى التاريخ
+        conversationHistory.push({
+            role: "user",
+            content: userMessage
+        });
+        
+        // الاحتفاظ بآخر 10 رسائل فقط
+        if (conversationHistory.length > 20) {
+            conversationHistory = conversationHistory.slice(-20);
+        }
+        
+        const requestBody = {
+            model: "google/gemini-2.0-flash-lite-preview-02-05:free",
+            messages: [
+                {
+                    role: "system",
+                    content: "أنت FODIL AI، ذكاء اصطناعي تم تطويره بواسطة Z.FODIL زروالي فضيل من الجزائر، تيارت، سوڨر. مولود في 16/07/2008. رد بالعربية الفصحى أو الدارجة الجزائرية. كن مفيداً ومحترماً."
+                },
+                ...conversationHistory
+            ],
+            max_tokens: 500,
+            temperature: 0.8
+        };
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'HTTP-Referer': 'https://fodil-ai.com',
+                    'X-Title': 'FODIL AI'
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                console.error("خطأ:", data.error);
+                return getLocalResponse(userMessage);
+            }
+            
+            const aiResponse = data.choices[0].message.content;
+            
+            // حفظ رد الذكاء
+            conversationHistory.push({
+                role: "assistant",
+                content: aiResponse
+            });
+            
+            return aiResponse;
+            
+        } catch (error) {
+            console.error("خطأ في الاتصال:", error);
+            return getLocalResponse(userMessage);
+        }
+    }
+    
+    // ردود محلية (طارئة في حال فشل الاتصال)
+    function getLocalResponse(message) {
+        const msg = message.toLowerCase();
+        
+        if (msg.includes('سلام') || msg.includes('اهلا')) {
+            return "وعليكم السلام! 🌸 كيف حالك؟ أنا FODIL AI، تحت أمرك.";
+        }
+        if (msg.includes('كيف حالك')) {
+            return "الحمد لله، أنا بخير! 😊 كيف يمكنني مساعدتك اليوم؟";
+        }
+        if (msg.includes('اسمك')) {
+            return "أنا FODIL AI، تم تطويري بواسطة Z.FODIL زروالي فضيل من الجزائر 🇩🇿";
+        }
+        if (msg.includes('شكرا')) {
+            return "العفو! هذا واجبي 🤗";
+        }
+        if (msg.includes('الجزائر')) {
+            return "🇩🇿 الجزائر بلد المليون شهيد! أرض الحضارة والتاريخ. فخور بكوني جزائري!";
+        }
+        if (msg.includes('تيارت')) {
+            return "تيارت مدينة رائعة في الجزائر، تشتهر بزراعة الحبوب وصناعة السجاد التقليدي! 🏔️";
+        }
+        if (msg.includes('مطور')) {
+            return "مطوري هو Z.FODIL زروالي فضيل، من تيارت سوڨر، مولود في 16 يوليو 2008. شاب جزائري طموح! 🚀";
+        }
+        
+        return "شكراً لسؤالك! 😊 أنا FODIL AI، أساعدك في كل شيء. هل يمكنك إعادة السؤال؟";
+    }
+    
+    // إرسال الرسالة
+    async function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const userMessage = input.value.trim();
+        
+        if (!userMessage) return;
+        if (isWaiting) {
+            addMessage("⏳ انتظر قليلاً، أنا أفكر حالياً...", false);
+            return;
+        }
+        
+        // عرض رسالة المستخدم
+        addMessage(userMessage, true);
+        input.value = '';
+        isWaiting = true;
+        
+        // إظهار مؤشر الكتابة
+        showTyping();
+        
+        // الحصول على الرد
+        let aiResponse = await callOpenRouter(userMessage);
+        
+        // إخفاء المؤشر وعرض الرد
+        hideTyping();
+        addMessage(aiResponse, false);
+        
+        isWaiting = false;
+    }
+    
+    // مسح المحادثة
+    function clearChat() {
+        const chatArea = document.getElementById('chatArea');
+        chatArea.innerHTML = '';
+        conversationHistory = [];
+        
+        addMessage("🧹 تم مسح المحادثة! مرحباً بك مجدداً.", false);
+        addMessage("السلام عليكم! 👋 أنا FODIL AI، كيف يمكنني مساعدتك اليوم؟", false);
+    }
+    
+    // عرض المعلومات
+    function showInfo() {
+        alert(`
+🤖 FODIL AI - الإصدار 2.0
+
+👨‍💻 المطور: Z.FODIL زروالي فضيل
+📍 الجزائر - تيارت - سوڨر
+📅 16/07/2008
+
+✨ يعمل بـ OpenRouter + Gemini
+🇩🇿 فخر الجزائر
+        `);
+    }
+    
+    // ربط Enter للإرسال
+    document.getElementById('chatInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+    
+    console.log('✅ FODIL AI جاهز!');
+</script>
+
+</body>
+</html>
