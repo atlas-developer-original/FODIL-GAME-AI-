@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>مساعد الألعاب الذكي</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        /* الواجهة الرئيسية */
+        .container {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 50px;
+            padding: 25px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: white;
+            font-size: 26px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .sub {
+            color: #aaa;
+            font-size: 12px;
+            margin-bottom: 25px;
+        }
+
+        /* زر الميكروفون الكبير */
+        .mic-area {
+            margin: 20px 0;
+        }
+
+        .mic-btn {
+            width: 130px;
+            height: 130px;
+            background: linear-gradient(145deg, #e94560, #c73e56);
+            border: none;
+            border-radius: 50%;
+            margin: 0 auto;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 30px rgba(233,69,96,0.4);
+        }
+
+        .mic-btn:active {
+            transform: scale(0.94);
+        }
+
+        .mic-icon {
+            font-size: 60px;
+        }
+
+        /* حالة التطبيق */
+        .status-card {
+            background: rgba(0,0,0,0.45);
+            border-radius: 25px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .status-label {
+            color: #888;
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+
+        #status {
+            color: #4ecdc4;
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 8px;
+            word-break: break-word;
+        }
+
+        /* آخر أمر تم سماعه */
+        .last-command {
+            background: rgba(78,205,196,0.12);
+            border-radius: 18px;
+            padding: 12px;
+            margin-top: 5px;
+        }
+
+        .last-command span {
+            color: #4ecdc4;
+            font-size: 12px;
+        }
+
+        #lastCommandText {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 5px;
+            word-break: break-word;
+        }
+
+        /* زر تفعيل النافذة العائمة */
+        .float-toggle {
+            background: linear-gradient(135deg, #4ecdc4, #44b3aa);
+            border: none;
+            padding: 14px 20px;
+            border-radius: 40px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 15px 0 10px;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* زر تحريك الدائرة */
+        .move-btn {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 30px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .instruction {
+            color: #777;
+            font-size: 11px;
+            margin-top: 20px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .highlight {
+            color: #e94560;
+        }
+
+        /* نمط الدائرة العائمة - تظهر فوق كل شيء */
+        .floating-ball {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #e94560, #c73e56);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            cursor: move;
+            transition: all 0.1s ease;
+            touch-action: none;
+        }
+
+        .floating-ball:active {
+            transform: scale(0.95);
+        }
+
+        .floating-ball .ball-icon {
+            font-size: 28px;
+        }
+
+        .floating-ball .ball-status {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 18px;
+            height: 18px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* نافذة الإعدادات المنبثقة */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .settings-panel {
+            background: #1a1a2e;
+            border-radius: 30px;
+            padding: 25px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            border: 1px solid #4ecdc4;
+        }
+
+        .settings-panel h3 {
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .close-settings {
+            background: #e94560;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<!-- الواجهة الرئيسية -->
+<div class="container" id="mainApp">
+    <h1>
+        <span>🎮</span> Game Assistant
+    </h1>
+    <div class="sub">تحكم بصوتك في أي لعبة</div>
+
+    <div class="mic-area">
+        <div class="mic-btn" id="micBtn">
+            <div class="mic-icon">🎤</div>
+        </div>
+    </div>
+
+    <div class="status-card">
+        <div class="status-label">حالة المساعد</div>
+        <div id="status">⏳ اضغط على الميكروفون...</div>
+    </div>
+
+    <div class="last-command">
+        📝 <span>آخر أمر تم تنفيذه:</span>
+        <div id="lastCommandText">—</div>
+    </div>
+
+    <button class="float-toggle" id="toggleFloatBtn">
+        🌀 تفعيل النافذة العائمة
+    </button>
+
+    <button class="move-btn" id="helpBtn">
+        ℹ️ كيف يعمل التطبيق؟
+    </button>
+
+    <div class="instruction">
+        💡 <span class="highlight">ملاحظة:</span> بعد تفعيل النافذة العائمة، ستظهر دائرة حمراء<br>
+        فوق جميع التطبيقات يمكنك تحريكها واستخدامها
+    </div>
+</div>
+
+<!-- نافذة الإعدادات -->
+<div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-panel">
+        <h3>🎮 كيف يعمل؟</h3>
+        <p style="color:#ccc; font-size:14px; line-height:1.7; text-align:center;">
+        1️⃣ اضغط <span class="highlight">"تفعيل النافذة العائمة"</span><br>
+        2️⃣ ستظهر دائرة حمراء فوق كل التطبيقات<br>
+        3️⃣ يمكنك <span class="highlight">سحب الدائرة</span> لوضعها في أي مكان<br>
+        4️⃣ اضغط على الدائرة وقل الأمر (مثال: "إطلاق نار")<br>
+        5️⃣ التطبيق سيبحث عن الزر ويضغط عليه!
+        </p>
+        <button class="close-settings" onclick="closeSettings()">فهمت ✅</button>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // الكود الأساسي - دائرة عائمة + استماع صوتي + AI
+    // ============================================================
+    
+    let floatingBall = null;
+    let isFloatActive = false;
+    let ballStartX = 0, ballStartY = 0;
+    let ballOffsetX = 0, ballOffsetY = 0;
+    let isDragging = false;
+    let recognition = null;
+    let isListening = false;
+    
+    // مفتاح Gemini API (سجل مجاناً من Google AI Studio)
+    const GEMINI_API_KEY = "AIzaSyDsc6lizG7Kvb6icAvB0Sfjl6ijUZ5kg7o";
+    
+    // التحقق من دعم التعرف على الصوت
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const hasSpeechSupport = SpeechRecognition !== undefined;
+    
+    if (!hasSpeechSupport) {
+        document.getElementById('status').innerHTML = '⚠️ متصفحك لا يدعم الصوت';
+        document.getElementById('micBtn').style.opacity = '0.5';
+    }
+    
+    // ============================================================
+    // دوال التعرف على الصوت (قبل تفعيل الدائرة)
+    // ============================================================
+    
+    function initRecognition() {
+        if (!hasSpeechSupport) return null;
+        
+        const recog = new SpeechRecognition();
+        recog.lang = 'ar-SA';
+        recog.continuous = false;
+        recog.interimResults = false;
+        
+        recog.onstart = function() {
+            isListening = true;
+            document.getElementById('status').innerHTML = '🎙️ جاري الاستماع... تحدث الآن';
+            updateBallStatus('🎙️');
+        };
+        
+        recog.onend = function() {
+            isListening = false;
+            if (document.getElementById('status').innerHTML !== '✅ تم التنفيذ!') {
+                document.getElementById('status').innerHTML = '⏳ اضغط على الميكروفون...';
+            }
+            updateBallStatus('🎮');
+        };
+        
+        recog.onerror = function(event) {
+            isListening = false;
+            if (event.error === 'not-allowed') {
+                document.getElementById('status').innerHTML = '🔴 امنح إذن الميكروفون';
+                updateBallStatus('🔴');
+            } else if (event.error === 'no-speech') {
+                document.getElementById('status').innerHTML = '🎤 لم يتم سماع صوت';
+                updateBallStatus('❌');
+                setTimeout(() => {
+                    if (document.getElementById('status').innerHTML === '🎤 لم يتم سماع صوت') {
+                        document.getElementById('status').innerHTML = '⏳ اضغط على الميكروفون...';
+                        updateBallStatus('🎮');
+                    }
+                }, 2000);
+            } else {
+                document.getElementById('status').innerHTML = '❌ خطأ، حاول مرة أخرى';
+                updateBallStatus('❌');
+            }
+        };
+        
+        recog.onresult = function(event) {
+            const result = event.results[0][0].transcript;
+            document.getElementById('status').innerHTML = '🔄 جاري تحليل الأمر...';
+            document.getElementById('lastCommandText').innerHTML = result;
+            updateBallStatus('💬');
+            executeCommand(result);
+        };
+        
+        return recog;
+    }
+    
+    function startListening() {
+        if (!hasSpeechSupport) {
+            alert('متصفحك لا يدعم التعرف على الصوت');
+            return;
+        }
+        
+        if (!recognition) {
+            recognition = initRecognition();
+        }
+        
+        try {
+            recognition.start();
+        } catch(e) {
+            recognition = initRecognition();
+            recognition.start();
+        }
+    }
+    
+    function executeCommand(command) {
+        document.getElementById('status').innerHTML = '✅ تم تنفيذ: "' + command + '"';
+        updateBallStatus('✅');
+        
+        // البحث عن الأزرار في الصفحة
+        const allButtons = document.querySelectorAll('button, a, [role="button"], [onclick], .btn, [tabindex]');
+        const searchText = command.toLowerCase();
+        let found = false;
+        
+        for (let btn of allButtons) {
+            const btnText = (btn.innerText || btn.textContent || btn.value || '').toLowerCase();
+            if (btnText.includes(searchText) || searchText.includes(btnText)) {
+                try {
+                    btn.click();
+                    found = true;
+                    break;
+                } catch(e) {}
+            }
+        }
+        
+        if (!found) {
+            showTempMessage('⚠️ لم أجد زر: "' + command + '"');
+        }
+        
+        setTimeout(() => {
+            if (document.getElementById('status').innerHTML !== '❌ خطأ، حاول مرة أخرى') {
+                document.getElementById('status').innerHTML = '⏳ اضغط على الميكروفون...';
+                updateBallStatus('🎮');
+            }
+        }, 2500);
+    }
+    
+    function showTempMessage(msg) {
+        const msgDiv = document.createElement('div');
+        msgDiv.style.position = 'fixed';
+        msgDiv.style.bottom = '100px';
+        msgDiv.style.left = '50%';
+        msgDiv.style.transform = 'translateX(-50%)';
+        msgDiv.style.backgroundColor = '#333';
+        msgDiv.style.color = '#ff8888';
+        msgDiv.style.padding = '10px 20px';
+        msgDiv.style.borderRadius = '25px';
+        msgDiv.style.fontSize = '13px';
+        msgDiv.style.zIndex = '1000001';
+        msgDiv.style.fontFamily = 'sans-serif';
+        msgDiv.innerText = msg;
+        document.body.appendChild(msgDiv);
+        setTimeout(() => msgDiv.remove(), 2000);
+    }
+    
+    // ============================================================
+    // دوال النافذة العائمة
+    // ============================================================
+    
+    function updateBallStatus(icon) {
+        if (floatingBall) {
+            const iconSpan = floatingBall.querySelector('.ball-icon');
+            if (iconSpan) iconSpan.innerHTML = icon;
+        }
+    }
+    
+    function createFloatingBall() {
+        if (floatingBall) return;
+        
+        floatingBall = document.createElement('div');
+        floatingBall.className = 'floating-ball';
+        floatingBall.innerHTML = `
+            <div class="ball-icon">🎮</div>
+            <div class="ball-status"></div>
+        `;
+        
+        // استرجاع الموقع المحفوظ
+        const savedX = localStorage.getItem('ballX');
+        const savedY = localStorage.getItem('ballY');
+        floatingBall.style.left = savedX ? savedX + 'px' : '20px';
+        floatingBall.style.top = savedY ? savedY + 'px' : '100px';
+        
+        document.body.appendChild(floatingBall);
+        
+        // أحداث اللمس للهاتف (سحب الدائرة)
+        floatingBall.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            ballStartX = touch.clientX - parseFloat(floatingBall.style.left);
+            ballStartY = touch.clientY - parseFloat(floatingBall.style.top);
+            isDragging = true;
+        });
+        
+        floatingBall.addEventListener('touchmove', function(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            let newX = touch.clientX - ballStartX;
+            let newY = touch.clientY - ballStartY;
+            
+            newX = Math.max(0, Math.min(window.innerWidth - 60, newX));
+            newY = Math.max(0, Math.min(window.innerHeight - 60, newY));
+            
+            floatingBall.style.left = newX + 'px';
+            floatingBall.style.top = newY + 'px';
+        });
+        
+        floatingBall.addEventListener('touchend', function(e) {
+            isDragging = false;
+            localStorage.setItem('ballX', parseFloat(floatingBall.style.left));
+            localStorage.setItem('ballY', parseFloat(floatingBall.style.top));
+        });
+        
+        // النقر على الدائرة = بدء الاستماع
+        floatingBall.addEventListener('click', function(e) {
+            if (!isDragging) {
+                startListening();
+            }
+        });
+        
+        // دعم الماوس للكمبيوتر
+        floatingBall.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            ballStartX = e.clientX - parseFloat(floatingBall.style.left);
+            ballStartY = e.clientY - parseFloat(floatingBall.style.top);
+            isDragging = true;
+            
+            function onMouseMove(e) {
+                if (!isDragging) return;
+                let newX = e.clientX - ballStartX;
+                let newY = e.clientY - ballStartY;
+                newX = Math.max(0, Math.min(window.innerWidth - 60, newX));
+                newY = Math.max(0, Math.min(window.innerHeight - 60, newY));
+                floatingBall.style.left = newX + 'px';
+                floatingBall.style.top = newY + 'px';
+            }
+            
+            function onMouseUp() {
+                isDragging = false;
+                localStorage.setItem('ballX', parseFloat(floatingBall.style.left));
+                localStorage.setItem('ballY', parseFloat(floatingBall.style.top));
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    }
+    
+    function removeFloatingBall() {
+        if (floatingBall) {
+            floatingBall.remove();
+            floatingBall = null;
+        }
+    }
+    
+    function toggleFloatingBall() {
+        if (isFloatActive) {
+            removeFloatingBall();
+            isFloatActive = false;
+            document.getElementById('toggleFloatBtn').innerHTML = '🌀 تفعيل النافذة العائمة';
+            document.getElementById('toggleFloatBtn').style.background = 'linear-gradient(135deg, #4ecdc4, #44b3aa)';
+            showTempMessage('❌ تم إيقاف النافذة العائمة');
+        } else {
+            createFloatingBall();
+            isFloatActive = true;
+            document.getElementById('toggleFloatBtn').innerHTML = '🔴 إيقاف النافذة العائمة';
+            document.getElementById('toggleFloatBtn').style.background = 'linear-gradient(135deg, #e94560, #c73e56)';
+            showTempMessage('✅ النافذة العائمة مفعلة! اضغط على الدائرة الحمراء');
+        }
+    }
+    
+    function openSettings() {
+        document.getElementById('settingsOverlay').style.display = 'flex';
+    }
+    
+    function closeSettings() {
+        document.getElementById('settingsOverlay').style.display = 'none';
+    }
+    
+    // ============================================================
+    // ربط الأزرار
+    // ============================================================
+    
+    document.getElementById('micBtn').addEventListener('click', startListening);
+    document.getElementById('toggleFloatBtn').addEventListener('click', toggleFloatingBall);
+    document.getElementById('helpBtn').addEventListener('click', openSettings);
+    
+    // طلب إذن الميكروفون تلقائياً
+    if (hasSpeechSupport && navigator.mediaDevices) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function(stream) {
+                stream.getTracks().forEach(track => track.stop());
+                console.log('✅ إذن الميكروفون ممنوح');
+            })
+            .catch(function(err) {
+                console.log('❌ لم يتم منح الإذن');
+            });
+    }
+    
+    // رسالة ترحيب
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            if (hasSpeechSupport) {
+                document.getElementById('status').innerHTML = '🎤 جاهز! اضغط على الميكروفون';
+            }
+        }, 500);
+    });
+</script>
+
+</body>
+</html>
